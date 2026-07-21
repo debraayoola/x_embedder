@@ -52,19 +52,26 @@ client.on('messageCreate', async (message) => {
     const tweet = data.tweet;
     if (!tweet) return;
 
-    const postedDate = new Date(tweet.created_timestamp * 1000).toLocaleString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+    // Discord's own timestamp markup — renders in each viewer's local
+    // time/format automatically, e.g. "July 20, 2026 6:52 PM"
+    const postedTimestamp = `<t:${tweet.created_timestamp}:f>`;
 
-    // Header: author name/handle + avatar thumbnail
+    // Abbreviates large numbers: 1200 -> 1.2K, 3400000 -> 3.4M
+    const abbreviate = (num) => {
+      if (num === null || num === undefined) return 'N/A';
+      const n = Number(num);
+      if (Number.isNaN(n)) return 'N/A';
+      if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+      if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+      if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+      return `${n}`;
+    };
+
+    // Header: author name as a link to their X profile + avatar thumbnail
     const headerSection = new SectionBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `**${tweet.author.name}** (@${tweet.author.screen_name})\n${tweet.text ?? ''}`
+          `**${tweet.author.name}** ([@${tweet.author.screen_name}](${tweet.author.url}))\n${tweet.text ?? ''}`
         )
       )
       .setThumbnailAccessory(
@@ -104,11 +111,11 @@ client.on('messageCreate', async (message) => {
 
     container.addSeparatorComponents(new SeparatorBuilder());
 
-    // Footer: stats + open link + timestamp
+    // Footer: stats (views abbreviated) + open link + Discord timestamp
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `💬 ${tweet.replies ?? 0}  🔁 ${tweet.retweets ?? 0}  ❤️ ${tweet.likes ?? 0}  👁 ${tweet.views ?? 'N/A'}\n` +
-        `[Open in X](${originalUrl}) • Posted ${postedDate}`
+        `💬 ${tweet.replies ?? 0}  🔁 ${tweet.retweets ?? 0}  ❤️ ${tweet.likes ?? 0}  👁 ${abbreviate(tweet.views)}\n` +
+        `[Open in X](${originalUrl}) • Posted ${postedTimestamp}`
       )
     );
 
