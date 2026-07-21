@@ -75,13 +75,30 @@ client.on('messageCreate', async (message) => {
       .setAccentColor(0x1d9bf0)
       .addSectionComponents(headerSection);
 
-    // Media (image or video thumbnail), if present
-    const mediaUrl = tweet.media?.photos?.[0]?.url || tweet.media?.videos?.[0]?.thumbnail_url;
-    if (mediaUrl) {
+    // Media: pull in every photo AND full video (not just a thumbnail),
+    // supporting posts with multiple attachments. Discord's Media
+    // Gallery accepts up to 10 items and renders both images and
+    // playable videos when given a direct media URL.
+    const galleryItems = [];
+
+    for (const photo of tweet.media?.photos ?? []) {
+      galleryItems.push(new MediaGalleryItemBuilder().setURL(photo.url));
+    }
+
+    for (const video of tweet.media?.videos ?? []) {
+      // variants are different bitrate/quality renditions — pick the highest bitrate mp4
+      const best = (video.variants ?? [])
+        .filter((v) => v.content_type === 'video/mp4')
+        .sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0))[0];
+      const videoUrl = best?.url ?? video.url;
+      if (videoUrl) {
+        galleryItems.push(new MediaGalleryItemBuilder().setURL(videoUrl));
+      }
+    }
+
+    if (galleryItems.length) {
       container.addMediaGalleryComponents(
-        new MediaGalleryBuilder().addItems(
-          new MediaGalleryItemBuilder().setURL(mediaUrl)
-        )
+        new MediaGalleryBuilder().addItems(...galleryItems.slice(0, 10))
       );
     }
 
