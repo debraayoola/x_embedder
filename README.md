@@ -2,7 +2,8 @@
 
 Auto-detects X/Twitter links in chat and posts them as a Discord
 **Components V2 Container** (not a classic embed) with author, avatar,
-tweet text, media, and reply/retweet/like/view stats.
+tweet text, **all photos and full playable videos** (not just a
+thumbnail), and reply/retweet/like/view stats.
 
 ## Files
 
